@@ -7,33 +7,22 @@
   };
 
   outputs =
-    inputs@{ flake-parts, ... }:
+    inputs@{ flake-parts, nixpkgs, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
-      systems = [
-        "aarch64-darwin"
-        "x86_64-darwin"
-        "aarch64-linux"
-        "x86_64-linux"
-      ];
+      systems = nixpkgs.lib.platforms.all;
 
       perSystem =
         { pkgs, ... }:
         {
           devShells.default = pkgs.mkShell {
             packages = [
-              pkgs.llvmPackages_21.clang-tools
-              pkgs.llvmPackages_21.libcxxClang
-              pkgs.llvmPackages_21.bintools
               pkgs.cmake
-              pkgs.cmake-format
-              pkgs.cmake-language-server
               pkgs.ninja
               pkgs.gtest
-              pkgs.nixfmt-rfc-style
             ];
           };
 
-          packages.default = pkgs.llvmPackages_21.libcxxStdenv.mkDerivation {
+          packages.default = pkgs.stdenv.mkDerivation {
             name = "cxx-template";
             src = ./.;
             nativeBuildInputs = [
@@ -54,6 +43,19 @@
               ctest --output-on-failure
               runHook postCheck
             '';
+          };
+
+          apps.format = {
+            type = "app";
+            program =
+              (pkgs.writeShellScript "format-cxx-template" ''
+                set -euo pipefail
+                CPU_COUNT=$(${pkgs.coreutils}/bin/nproc)
+                echo "Running clang-format with $CPU_COUNT parallel processes..."
+                ${pkgs.fd}/bin/fd -0 -t f -e hh -e cc . include src tests | \
+                  xargs -0 -n 1 -P "$CPU_COUNT" clang-format -i
+                echo "OK"
+              '').outPath;
           };
 
           apps.build = {
