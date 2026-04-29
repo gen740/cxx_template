@@ -1,5 +1,3 @@
 #include "template.hh"
 
-int main() {
-  return 0;
-}
+auto main() -> int { return 0; }
