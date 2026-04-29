@@ -19,6 +19,7 @@
               pkgs.cmake
               pkgs.ninja
               pkgs.gtest
+              pkgs.clang-tools
             ];
           };
 
@@ -28,6 +29,7 @@
             nativeBuildInputs = [
               pkgs.cmake
               pkgs.ninja
+              pkgs.clang-tools
             ];
             buildInputs = [
               pkgs.gtest
@@ -36,6 +38,8 @@
               "-G Ninja"
               "-DCMAKE_BUILD_TYPE=Release"
               "-DCXX_TEMPLATE_ENABLE_TEST=ON"
+              "-DCXX_TEMPLATE_ENABLE_CLANG_TIDY=ON"
+              "-DCXX_TEMPLATE_ENABLE_SANITIZERS=ON"
             ];
             doCheck = true;
             checkPhase = ''
@@ -52,7 +56,7 @@
                 set -euo pipefail
                 CPU_COUNT=$(${pkgs.coreutils}/bin/nproc)
                 echo "Running clang-format with $CPU_COUNT parallel processes..."
-                ${pkgs.fd}/bin/fd -0 -t f -e hh -e cc . include src tests | \
+                ${pkgs.fd}/bin/fd -0 -t f -e hh -e cc . include src tests apps | \
                   xargs -0 -n 1 -P "$CPU_COUNT" clang-format -i
                 echo "OK"
               '').outPath;
